@@ -1977,27 +1977,33 @@ class Session:
 
         for drv in self.drivers:
             try:
-                # drop and recalculate time stamps based on 'Date', because 'Date' has a higher resolution
+                # drop and recalculate time stamps based on 'Date',
+                # because 'Date' has a higher resolution
                 drv_car = Telemetry(car_data[drv].drop(labels='Time', axis=1),
                                     session=self, driver=drv,
                                     drop_unknown_channels=True)
+            except KeyError:
+                pass
+            else:
+                drv_car['Date'] = drv_car['Date'].round('ms')
+                # create proper continuous timestamps
+                drv_car['Time'] = drv_car['Date'] - self.t0_date
+                drv_car['SessionTime'] = drv_car['Time']
+
+                self._car_data[drv] = drv_car
+
+            # the same for postion data
+            try:
                 drv_pos = Telemetry(pos_data[drv].drop(labels='Time', axis=1),
                                     session=self, driver=drv,
                                     drop_unknown_channels=True)
             except KeyError:
-                # not pos data or car data exists for this driver
-                continue
-
-            drv_car['Date'] = drv_car['Date'].round('ms')
-            drv_pos['Date'] = drv_pos['Date'].round('ms')
-
-            drv_car['Time'] = drv_car['Date'] - self.t0_date  # create proper continuous timestamps
-            drv_pos['Time'] = drv_pos['Date'] - self.t0_date
-            drv_car['SessionTime'] = drv_car['Time']
-            drv_pos['SessionTime'] = drv_pos['Time']
-
-            self._car_data[drv] = drv_car
-            self._pos_data[drv] = drv_pos
+                pass
+            else:
+                drv_pos['Date'] = drv_pos['Date'].round('ms')
+                drv_pos['Time'] = drv_pos['Date'] - self.t0_date
+                drv_pos['SessionTime'] = drv_pos['Time']
+                self._pos_data[drv] = drv_pos
 
         if hasattr(self, '_laps'):
             self._laps['LapStartDate'] \
@@ -2235,6 +2241,8 @@ class Laps(pd.DataFrame):
                         self[col] = _type()
 
                 if convert:
+                    if _type == 'int64':
+                        self[col] = self[col].fillna(0)
                     self[col] = self[col].astype(_type)
 
         self.session = session

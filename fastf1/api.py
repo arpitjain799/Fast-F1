@@ -1254,7 +1254,7 @@ def driver_info(path, response=None, livedata=None):
     try:
         team_info = response[team_idx][1]
     except (IndexError, TypeError):
-        return dict()
+        team_info = dict()
 
     # loop through headshots
     try:
@@ -1262,7 +1262,7 @@ def driver_info(path, response=None, livedata=None):
         for head in headshots:
             head_info.update(response[head][1])
     except (IndexError, TypeError):
-        return dict()
+        head_info = dict()
 
     else:
         for drv in drv_info:
